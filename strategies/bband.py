@@ -43,6 +43,11 @@ class BollingerBandsStrategy(bt.Strategy):
         # 布林带宽度
         self.band_width = self.top - self.bot
 
+        # %B 指标 (价格在布林带中的位置) - 使用 DivByZero 防止除零
+        self.percent_b = bt.indicators.DivByZero(
+            self.data.close - self.bot, self.band_width, zero=0.5
+        )
+
         # 记录订单
         self.order = None
 

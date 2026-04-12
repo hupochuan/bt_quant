@@ -44,10 +44,9 @@ class DualMATrendStrategy(bt.Strategy):
             self.data.close, period=self.params.slow_period
         )
 
-        # 计算均线斜率（趋势）
-        self.fast_sma_slope = bt.indicators.Slope(
-            self.fast_sma, period=self.params.trend_period
-        )
+        # 计算均线斜率（趋势）- 使用差分近似斜率
+        # 正值表示向上倾斜，负值表示向下倾斜
+        self.fast_sma_slope = self.fast_sma - self.fast_sma(-self.params.trend_period)
 
         # 记录订单
         self.order = None

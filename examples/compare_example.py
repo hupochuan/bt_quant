@@ -2,7 +2,8 @@
 策略对比示例 - 对比多个策略在同一股票上的表现
 """
 import sys
-sys.path.insert(0, '/root/bt_quant')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine import compare_strategies
 

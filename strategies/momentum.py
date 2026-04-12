@@ -30,13 +30,11 @@ class MomentumStrategy(bt.Strategy):
 
     def __init__(self):
         """初始化策略"""
-        # 计算动量指标 (当前价格 / N周期前价格 - 1)
-        self.momentum = bt.indicators.Momentum(
+        # 使用 RateOfChange 指标获取真正的百分比变化率
+        # ROC 返回 (close[0]/close[-period] - 1)，即百分比变化
+        self.momentum_pct = bt.indicators.RateOfChange(
             self.data.close, period=self.params.period
         )
-
-        # 动量百分比
-        self.momentum_pct = self.momentum / 100
 
         # 记录订单
         self.order = None

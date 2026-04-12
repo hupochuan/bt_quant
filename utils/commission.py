@@ -42,7 +42,7 @@ class PercentageCommission(bt.CommInfoBase):
     params = (
         ('commission', 0.001),    # 手续费率 (0.1%)
         ('stocklike', True),
-        ('commtype', bt.CommInfoBase.COMM_PERC),  # 百分比费用类型
+        ('commtype', bt.CommInfoBase.COMM_FIXED),  # 使用 FIXED 模式，让 _getcommission 返回实际金额
     )
 
     def _getcommission(self, size, price, pseudoexec):
@@ -73,7 +73,7 @@ class TieredCommission(bt.CommInfoBase):
         ('tier2_rate', 0.0008),    # 第二档费率
         ('tier3_rate', 0.0005),    # 第三档费率
         ('stocklike', True),
-        ('commtype', bt.CommInfoBase.COMM_PERC),
+        ('commtype', bt.CommInfoBase.COMM_FIXED),  # 使用 FIXED 模式
     )
 
     def _getcommission(self, size, price, pseudoexec):

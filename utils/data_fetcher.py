@@ -70,8 +70,8 @@ class DataFetcher:
             if df.empty:
                 raise ValueError(f"未获取到 {symbol} 的数据")
 
-            # 标准化列名
-            df.columns = [col.capitalize() for col in df.columns]
+            # 标准化列名 - 使用 title() 保持多词列名正确（如 "Adj Close"）
+            df.columns = [col.title() for col in df.columns]
 
             # 保存到缓存
             df.to_csv(cache_file)
