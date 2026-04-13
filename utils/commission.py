@@ -42,23 +42,11 @@ class PercentageCommission(bt.CommInfoBase):
     params = (
         ('commission', 0.001),    # 手续费率 (0.1%)
         ('stocklike', True),
-        ('commtype', bt.CommInfoBase.COMM_FIXED),  # 使用 FIXED 模式，让 _getcommission 返回实际金额
+        ('commtype', bt.CommInfoBase.COMM_PERC),  # 百分比模式，框架自动计算
     )
 
-    def _getcommission(self, size, price, pseudoexec):
-        """
-        计算手续费
-
-        Args:
-            size: 交易数量
-            price: 交易价格
-            pseudoexec: 是否为预执行
-
-        Returns:
-            float: 手续费金额
-        """
-        amount = abs(size) * price
-        return amount * self.params.commission
+    # 使用 COMM_PERC 模式，Backtrader 框架会自动按百分比计算手续费
+    # 无需重写 _getcommission 方法
 
 
 class TieredCommission(bt.CommInfoBase):

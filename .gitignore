@@ -76,3 +76,6 @@ report/*.png
 # OS files
 .DS_Store
 Thumbs.db
+
+# Qoder CLI
+.qoder/

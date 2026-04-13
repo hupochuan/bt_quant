@@ -73,6 +73,13 @@ class DataFetcher:
             # 标准化列名 - 使用 title() 保持多词列名正确（如 "Adj Close"）
             df.columns = [col.title() for col in df.columns]
 
+            # 将时区时间转为UTC后去除时区信息
+            # Yahoo Finance 返回带时区的时间戳（如 America/New_York），
+            # Backtrader 在读取时会将其转为 UTC，导致时间偏移4小时。
+            # 此处统一转换为 UTC 时间再去除时区，保证策略内时间与 UTC 一致。
+            if df.index.tz is not None:
+                df.index = df.index.tz_convert('UTC').tz_localize(None)
+
             # 保存到缓存
             df.to_csv(cache_file)
             print(f"[DataFetcher] 数据已缓存: {cache_file}")
@@ -126,7 +133,7 @@ def create_backtrader_data(
         symbol: 股票代码
         start_date: 开始日期
         end_date: 结束日期
-        interval: 数据周期
+        interval: 数据周期 (1d, 10m, 5m, 1h等)
         cache_dir: 缓存目录
 
     Returns:
@@ -140,12 +147,26 @@ def create_backtrader_data(
     fetcher = DataFetcher(cache_dir=cache_dir)
     df = fetcher.fetch_data(symbol, start_date, end_date, interval)
 
+    # 解析interval获取时间框架和压缩值
+    if interval == "1d":
+        timeframe = bt.TimeFrame.Days
+        compression = 1
+    elif interval.endswith("m"):
+        timeframe = bt.TimeFrame.Minutes
+        compression = int(interval[:-1])  # "10m" -> 10
+    elif interval.endswith("h"):
+        timeframe = bt.TimeFrame.Minutes
+        compression = int(interval[:-1]) * 60  # "1h" -> 60
+    else:
+        timeframe = bt.TimeFrame.Days
+        compression = 1
+
     # 创建 Backtrader 数据 feed
     data = YahooFinanceData(
         dataname=df,
         name=symbol,
-        timeframe=bt.TimeFrame.Days if interval == "1d" else bt.TimeFrame.Minutes,
-        compression=1
+        timeframe=timeframe,
+        compression=compression
     )
 
     return data

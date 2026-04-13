@@ -11,8 +11,10 @@ from .momentum import MomentumStrategy
 from .candle_patterns import (
     CandlePatternStrategy,
     EnhancedCandleStrategy,
-    DailyBreakoutStrategy
+    DailyBreakoutStrategy,
+    CandlePatternWithProfitTarget
 )
+from .candle_patterns_trend import CandlePatternTrendStrategy
 
 # 策略注册表
 STRATEGY_REGISTRY = {
@@ -61,6 +63,16 @@ STRATEGY_REGISTRY = {
         "name": "日线均线突破策略",
         "description": "均线突破 + MACD + 放量确认，适合上班族",
     },
+    "candle_trend": {
+        "class": CandlePatternTrendStrategy,
+        "name": "阴阳线趋势过滤策略",
+        "description": "阴阳线 + 20日均线趋势过滤，下跌只反T，上涨只正T",
+    },
+    "candle_profit30": {
+        "class": CandlePatternWithProfitTarget,
+        "name": "阴阳线策略-30美元止盈版",
+        "description": "阴阳线策略，增加30美元固定金额止盈条件",
+    },
 }
 
 
@@ -99,6 +111,8 @@ __all__ = [
     'CandlePatternStrategy',
     'EnhancedCandleStrategy',
     'DailyBreakoutStrategy',
+    'CandlePatternTrendStrategy',
+    'CandlePatternWithProfitTarget',
     'STRATEGY_REGISTRY',
     'get_strategy',
     'list_strategies',

@@ -33,7 +33,8 @@ class BacktestEngine:
         initial_cash: float = None,
         commission_rate: float = None,
         enable_plot: bool = True,
-        plot_path: str = "./report"
+        plot_path: str = "./report",
+        interval: str = None
     ):
         """
         初始化回测引擎
@@ -47,6 +48,7 @@ class BacktestEngine:
             commission_rate: 手续费率
             enable_plot: 是否生成图表
             plot_path: 图表保存路径
+            interval: 数据周期 (1d, 10m等)，None则根据策略配置自动选择
         """
         self.strategy_name = strategy_name
         self.symbol = symbol or config.DEFAULT_SYMBOL
@@ -56,6 +58,7 @@ class BacktestEngine:
         self.commission_rate = commission_rate or config.COMMISSION_RATE
         self.enable_plot = enable_plot
         self.plot_path = plot_path
+        self.interval = interval
 
         # 创建输出目录
         os.makedirs(self.plot_path, exist_ok=True)
@@ -68,19 +71,56 @@ class BacktestEngine:
 
         self.strategy_class = self.strategy_info["class"]
 
+        # 根据策略类型确定数据周期
+        if self.interval is None:
+            self.interval = self._get_strategy_interval()
+
+        # 根据策略类型确定初始资金
+        self._setup_strategy_config()
+        
+        # 特殊处理：带止盈的阴阳线策略
+        self._setup_candle_profit_params()
+
         # 初始化 Backtrader Cerebro 引擎
         self.cerebro = bt.Cerebro()
+
+    def _get_strategy_interval(self) -> str:
+        """根据策略类型获取数据周期"""
+        is_candle = self.strategy_name in ("candle", "enhanced_candle", "daily_breakout", "candle_trend", "candle_profit30")
+        if is_candle:
+            candle_params = config.STRATEGY_CONFIGS.get(self.strategy_name, {})
+            return candle_params.get("interval", "1d")
+        return "1d"
+
+    def _setup_strategy_config(self):
+        """根据策略类型设置配置"""
+        is_candle = self.strategy_name in ("candle", "enhanced_candle", "daily_breakout", "candle_trend", "candle_profit30")
+        if is_candle:
+            candle_params = config.STRATEGY_CONFIGS.get(self.strategy_name, {})
+            self.initial_cash = candle_params.get("initial_cash", self.initial_cash)
+            self.commission_fixed = candle_params.get("commission_fixed", 5.0)
+            self.base_position = candle_params.get("initial_position", 0)
+        else:
+            self.commission_fixed = None
+            self.base_position = 0
+    
+    def _setup_candle_profit_params(self):
+        """设置带止盈阴阳线策略的专属参数"""
+        if self.strategy_name == "candle_profit30":
+            candle_params = config.STRATEGY_CONFIGS.get(self.strategy_name, {})
+            self.take_profit_amount = candle_params.get("take_profit_amount", 30.0)
 
     def setup(self):
         """设置回测环境"""
         # 添加策略
         self.cerebro.addstrategy(self.strategy_class)
 
-        # 添加数据
+        # 添加数据 - 使用策略对应的数据周期
         data_feed = create_backtrader_data(
             self.symbol,
             self.start_date,
-            self.end_date
+            self.end_date,
+            interval=self.interval
         )
         self.cerebro.adddata(data_feed, name=self.symbol)
 
@@ -135,8 +175,35 @@ class BacktestEngine:
         print(f"   描述: {self.strategy_info['description']}")
         print(f"   股票: {self.symbol}")
         print(f"   时间: {self.start_date} ~ {self.end_date}")
-        print(f"   初始资金: ${self.initial_cash:,.2f}")
-        print(f"   手续费率: {self.commission_rate * 100:.2f}%")
+        
+        # 根据策略类型显示专属配置
+        is_candle = self.strategy_name in ("candle", "enhanced_candle", "daily_breakout", "candle_profit30")
+        if is_candle:
+            candle_params = config.STRATEGY_CONFIGS.get(self.strategy_name, {})
+            print(f"   K线周期: {candle_params.get('interval', '1d')}")
+            print(f"   初始现金: ${self.initial_cash:,.2f}")
+            print(f"   初始持仓: {candle_params.get('initial_position', 0)} 股")
+            print(f"   每笔手续费: ${candle_params.get('commission_fixed', 5.0):.2f}")
+            print(f"   每次交易: {candle_params.get('trade_size', 100)} 股")
+            if self.strategy_name == "daily_breakout":
+                print(f"   均线周期: {candle_params.get('sma_period', 20)} 日")
+                print(f"   MACD: {candle_params.get('macd_fast', 12)}/{candle_params.get('macd_slow', 26)}/{candle_params.get('macd_signal', 9)}")
+                print(f"   放量倍数: {candle_params.get('volume_ratio', 1.2)}x")
+                print(f"   止损: {candle_params.get('stop_loss_pct', 0.05)*100:.0f}%")
+                print(f"   止盈: {candle_params.get('take_profit_pct', 0.15)*100:.0f}%")
+            elif self.strategy_name == "candle_profit30":
+                print(f"   止损金额: ${candle_params.get('stop_loss_amount', 100.0):.2f}")
+                print(f"   止盈金额: ${candle_params.get('take_profit_amount', 30.0):.2f}")
+            else:
+                print(f"   止损金额: ${candle_params.get('stop_loss_amount', 100.0):.2f}")
+            if self.strategy_name == "enhanced_candle":
+                print(f"   EMA周期: {candle_params.get('ema_period', 20)}")
+                print(f"   放量倍数: {candle_params.get('volume_ratio', 1.2)}x")
+                print(f"   冷却期: {candle_params.get('cooldown_bars', 5)} 根K线")
+                print(f"   移动止损阈值: ${candle_params.get('trailing_profit_threshold', 50.0):.2f}")
+        else:
+            print(f"   初始资金: ${self.initial_cash:,.2f}")
+            print(f"   手续费率: {self.commission_rate * 100:.2f}%")
         print("=" * 70)
 
         # 设置环境
@@ -229,8 +296,8 @@ class BacktestEngine:
         print("\n" + "=" * 70)
         print("📊 回测结果摘要")
         print("=" * 70)
-        print(f"   初始资金:     ${results['initial_cash']:>15,.2f}")
-        print(f"   最终资金:     ${results['final_value']:>15,.2f}")
+        print(f"   初始现金:     ${results['initial_cash']:>15,.2f}")
+        print(f"   最终总值:     ${results['final_value']:>15,.2f}")
         print(f"   总收益率:     {results['total_return']:>15.2f}%")
         print(f"   夏普比率:     {results['sharpe_ratio']:>15.4f}")
         print(f"   最大回撤:     {results['max_drawdown']:>15.2f}%")
@@ -252,8 +319,8 @@ class BacktestEngine:
         print("=" * 70)
 
         profit_emoji = "🎉" if results['total_return'] > 0 else "😢"
-        print(f"\n{profit_emoji} 最终盈亏: ${results['final_value'] - results['initial_cash']:+,.2f} "
-              f"({results['total_return']:+.2f}%)")
+        pnl = results['final_value'] - results['initial_cash']
+        print(f"\n{profit_emoji} 最终盈亏: ${pnl:+,.2f} ({results['total_return']:+.2f}%)")
 
     def _generate_plot(self):
         """生成回测图表"""

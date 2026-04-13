@@ -66,30 +66,30 @@ MOMENTUM_PARAMS = {
 # ==================== 阴阳线策略配置 (Candle) ====================
 CANDLE_PATTERN_PARAMS = {
     "symbol": "BABA",            # 默认股票
-    "initial_cash": 100000.0,    # 初始资金
-    "initial_position": 0,       # 初始持仓
+    "initial_cash": 30000.0,     # 初始资金（增加以支持做T）
+    "initial_position": 100,     # 基准持仓（做T底仓）
     "commission_fixed": 5.0,     # 固定手续费
-    "trade_size": 100,           # 每次交易股数
-    "consecutive_count": 3,      # 连续 K 线数量
-    "stop_loss_amount": 200.0,   # 止损金额
-    "interval": "10m",           # K线周期 (10分钟)
+    "trade_size": 100,           # 每次交易股数（做T数量）
+    "consecutive_count": 2,      # 连续 K 线数量（2根）
+    "stop_loss_amount": 100.0,   # 止损金额
+    "interval": "15m",           # K线周期 (15分钟)
 }
 
 # ==================== 增强阴阳线策略配置 ====================
 ENHANCED_CANDLE_PARAMS = {
     "symbol": "BABA",
-    "initial_cash": 100000.0,
-    "initial_position": 0,
+    "initial_cash": 15000.0,
+    "initial_position": 100,
     "commission_fixed": 5.0,
     "trade_size": 100,
     "consecutive_count": 3,      # 连续 K 线数量
     "ema_period": 20,            # EMA 周期
     "volume_ma_period": 20,      # 成交量均线周期
     "volume_ratio": 1.5,         # 放量倍数
-    "stop_loss_amount": 200.0,
+    "stop_loss_amount": 100.0,
     "cooldown_bars": 5,          # 冷却期 (K线根数)
-    "trailing_profit_threshold": 500.0,  # 移动止盈阈值
-    "interval": "10m",
+    "trailing_profit_threshold": 200.0,  # 移动止盈阈值
+    "interval": "15m",           # 15分钟线
 }
 
 # ==================== 日线突破策略配置 ====================
@@ -110,6 +110,32 @@ DAILY_BREAKOUT_PARAMS = {
     "interval": "1d",
 }
 
+# ==================== 阴阳线趋势过滤策略配置 ====================
+CANDLE_TREND_PARAMS = {
+    "symbol": "BABA",
+    "initial_cash": 30000.0,
+    "initial_position": 100,     # 基准持仓（做T底仓）
+    "commission_fixed": 5.0,
+    "trade_size": 100,           # 每次交易股数
+    "consecutive_count": 2,      # 连续 K 线数量
+    "stop_loss_amount": 100.0,   # 止损金额
+    "trend_ma_period": 20,       # 趋势判断均线周期
+    "interval": "15m",           # 15分钟线
+}
+
+# ==================== 阴阳线策略-30美元止盈版配置 ====================
+CANDLE_PROFIT30_PARAMS = {
+    "symbol": "BABA",
+    "initial_cash": 30000.0,     # 初始资金
+    "initial_position": 0,       # 无基准持仓
+    "commission_fixed": 5.0,     # 固定手续费
+    "trade_size": 100,           # 每次交易股数
+    "consecutive_count": 2,      # 连续 K 线数量
+    "stop_loss_amount": 100.0,   # 止损金额
+    "take_profit_amount": 30.0,  # 止盈金额（30美元）
+    "interval": "15m",           # 15分钟线
+}
+
 # ==================== 策略注册表 ====================
 STRATEGY_CONFIGS = {
     "sma_cross": SMA_CROSS_PARAMS,
@@ -121,4 +147,6 @@ STRATEGY_CONFIGS = {
     "candle": CANDLE_PATTERN_PARAMS,
     "enhanced_candle": ENHANCED_CANDLE_PARAMS,
     "daily_breakout": DAILY_BREAKOUT_PARAMS,
+    "candle_trend": CANDLE_TREND_PARAMS,
+    "candle_profit30": CANDLE_PROFIT30_PARAMS,
 }
